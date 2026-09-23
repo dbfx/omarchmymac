@@ -1,0 +1,7 @@
+# Managed by ~/.config/omarchy-mac/bin/theme
+theme = TokyoNight
+background = 0b0d10
+foreground = e8e9ed
+cursor-color = ffb86c
+selection-background = 3b4252
+selection-foreground = e8e9ed

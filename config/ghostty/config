@@ -1,0 +1,43 @@
+# Ghostty: dark, borderless, and tuned for an AeroSpace workflow.
+
+font-family = JetBrainsMono Nerd Font Mono
+font-size = 13
+font-thicken = true
+adjust-cell-height = 8%
+
+background-opacity = 0.90
+background-opacity-cells = true
+background-blur = 0
+
+cursor-style = block
+cursor-style-blink = false
+
+# Hidden titlebar keeps native rounded corners without visible window chrome.
+macos-titlebar-style = hidden
+macos-window-shadow = false
+macos-titlebar-proxy-icon = hidden
+macos-option-as-alt = true
+
+window-padding-x = 14
+window-padding-y = 12
+window-padding-balance = true
+window-save-state = never
+window-inherit-working-directory = true
+tab-inherit-working-directory = true
+split-inherit-working-directory = true
+
+shell-integration = detect
+mouse-hide-while-typing = true
+unfocused-split-opacity = 0.86
+
+# Quake-style terminal: Caps+Space summons it through Hammerspoon.
+quick-terminal-position = top
+quick-terminal-size = 45%
+quick-terminal-animation-duration = 0
+quick-terminal-autohide = true
+quick-terminal-screen = main
+keybind = global:ctrl+shift+alt+cmd+space=toggle_quick_terminal
+
+# Loaded last so the desktop theme command can change colours without touching
+# the rest of this carefully tuned terminal configuration.
+config-file = theme

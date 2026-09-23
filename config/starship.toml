@@ -1,0 +1,61 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = false
+format = "$directory$git_branch$git_status$character"
+right_format = "$cmd_duration$nodejs$php$ruby$python"
+palette = "tokyo_night"
+
+[palettes.tokyo_night]
+background = "#0b0d10"
+foreground = "#e8e9ed"
+surface = "#1b1e24"
+muted = "#858b98"
+accent = "#ffb86c"
+blue = "#7aa2f7"
+green = "#9ece6a"
+red = "#f7768e"
+
+[directory]
+style = "bold blue"
+format = "[$path]($style) "
+truncation_length = 4
+truncate_to_repo = true
+
+[git_branch]
+symbol = " "
+style = "bold muted"
+format = "[$symbol$branch]($style)"
+
+[git_status]
+style = "bold accent"
+format = "[($all_status$ahead_behind )]($style)"
+
+[character]
+success_symbol = "[❯](bold accent)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold green)"
+
+[cmd_duration]
+min_time = 1500
+style = "muted"
+format = "[$duration]($style) "
+
+[nodejs]
+symbol = " "
+style = "green"
+format = "[$symbol($version )]($style)"
+
+[php]
+symbol = " "
+style = "blue"
+format = "[$symbol($version )]($style)"
+
+[ruby]
+symbol = " "
+style = "red"
+format = "[$symbol($version )]($style)"
+
+[python]
+symbol = " "
+style = "accent"
+format = "[$symbol($version )]($style)"

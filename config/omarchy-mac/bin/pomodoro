@@ -1,0 +1,28 @@
+#!/bin/zsh
+set -eu
+
+state_root="$HOME/.config/omarchy-mac/state"
+timer_file="$state_root/pomodoro-end"
+action="${1:-toggle}"
+minutes="${2:-25}"
+mkdir -p "$state_root"
+
+case "$action" in
+  start)
+    printf '%s\n' "$(( $(date +%s) + minutes * 60 ))" > "$timer_file"
+    ;;
+  stop)
+    rm -f "$timer_file"
+    ;;
+  toggle)
+    if [[ -r "$timer_file" ]] && (( $(<$timer_file) > $(date +%s) )); then
+      rm -f "$timer_file"
+    else
+      printf '%s\n' "$(( $(date +%s) + minutes * 60 ))" > "$timer_file"
+    fi
+    ;;
+  *) print -u2 "Usage: pomodoro [start [minutes]|stop|toggle]"; exit 64 ;;
+esac
+
+/opt/homebrew/bin/sketchybar --trigger omarchy_activity_change >/dev/null 2>&1 || true
+

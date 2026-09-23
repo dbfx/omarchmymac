@@ -1,0 +1,8 @@
+# Runtime state written by the scripts and bar plugins
+config/omarchy-mac/state/
+config/karabiner/automatic_backups/
+config/btop/btop.log
+*.log
+.DS_Store
+# Personal wallpapers of uncertain licence stay local; the theme ones are generated
+config/omarchy-mac/wallpapers/purple-*

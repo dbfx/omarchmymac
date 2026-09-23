@@ -1,0 +1,23 @@
+gui:
+  border: rounded
+  nerdFontsVersion: "3"
+  showFileTree: true
+  theme:
+    activeBorderColor:
+      - "#ffb86c"
+      - bold
+    inactiveBorderColor:
+      - "#3b4252"
+    searchingActiveBorderColor:
+      - "#7aa2f7"
+      - bold
+    optionsTextColor:
+      - "#7aa2f7"
+    selectedLineBgColor:
+      - "#1b1e24"
+git:
+  diffRenderers:
+    - colorArg: always
+      command: less --tabs=4 -RFX
+os:
+  editPreset: vscode

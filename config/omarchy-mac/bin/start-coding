@@ -1,0 +1,46 @@
+#!/bin/zsh
+set -eu
+
+project="${1:-}"
+code_root="$HOME/Code"
+state_root="$HOME/.config/omarchy-mac/state"
+
+if [[ -z "$project" || ! -d "$project" ]]; then
+  print -u2 "Usage: start-coding ~/Code/project"
+  exit 64
+fi
+
+project="${project:A}"
+case "$project" in
+  "$code_root"/*) ;;
+  *) print -u2 "Project must live below $code_root"; exit 64 ;;
+esac
+
+mkdir -p "$state_root"
+printf '%s\n' "$project" > "$state_root/current-project.$$"
+mv "$state_root/current-project.$$" "$state_root/current-project"
+
+# Warm the development services without stealing focus.
+if [[ -d /Applications/OrbStack.app ]]; then
+  open -gj -a OrbStack
+elif [[ -d /Applications/Docker.app ]]; then
+  open -gj -a Docker
+fi
+
+# Keep the existing browser window on web; editors and terminals have explicit
+# AeroSpace routing rules and land on code/term automatically.
+/opt/homebrew/bin/aerospace workspace web >/dev/null 2>&1 || true
+open -a "Google Chrome"
+open -a "T3 Code (Nightly)" "$project"
+open -na Ghostty.app --args --working-directory="$project"
+
+# Follow T3 Code as soon as its routed window exists. Existing sessions jump
+# immediately; cold starts wait only as long as the app actually needs.
+for _ in {1..40}; do
+  if /opt/homebrew/bin/aerospace list-windows --workspace code --format '%{app-bundle-id}' 2>/dev/null | /usr/bin/grep -qx 'com.t3tools.t3code'; then
+    break
+  fi
+  sleep 0.05
+done
+/opt/homebrew/bin/aerospace workspace code >/dev/null 2>&1 || true
+/opt/homebrew/bin/sketchybar --trigger omarchy_activity_change >/dev/null 2>&1 || true

@@ -1,0 +1,124 @@
+#!/bin/zsh
+set -u
+
+# Rebuild the preferred desktop after login. The script is deliberately
+# idempotent: it creates missing windows, but never closes user windows.
+
+aerospace_bin="/opt/homebrew/bin/aerospace"
+state_root="$HOME/.config/omarchy-mac/state"
+log_file="$state_root/session-restore.log"
+lock_dir="/tmp/omarchy-session-restore-${UID}.lock"
+
+mkdir -p "$state_root"
+mkdir "$lock_dir" 2>/dev/null || exit 0
+trap 'rmdir "$lock_dir" 2>/dev/null || true' EXIT
+
+exec > "$log_file" 2>&1
+print "$(date '+%Y-%m-%d %H:%M:%S') session restore started"
+
+# Wait until AeroSpace can see the window system. Give the external display a
+# few extra seconds to reconnect, but still work in laptop-only mode.
+for _ in {1..100}; do
+  "$aerospace_bin" list-monitors >/dev/null 2>&1 && break
+  sleep 0.1
+done
+for _ in {1..50}; do
+  "$aerospace_bin" list-monitors --format '%{monitor-name}' 2>/dev/null | /usr/bin/grep -qx 'Smart M80C' && break
+  sleep 0.2
+done
+
+# Let macOS restore any login items first so we don't manufacture duplicates.
+sleep 1
+
+windows_for() {
+  local bundle_id="$1"
+  "$aerospace_bin" list-windows --all --format '%{window-id}|%{app-bundle-id}' 2>/dev/null |
+    /usr/bin/awk -F'|' -v bundle_id="$bundle_id" '$2 == bundle_id { print $1 }'
+}
+
+window_count() {
+  windows_for "$1" | /usr/bin/awk 'END { print NR + 0 }'
+}
+
+wait_for_count() {
+  local bundle_id="$1"
+  local wanted="$2"
+  for _ in {1..200}; do
+    (( $(window_count "$bundle_id") >= wanted )) && return 0
+    sleep 0.1
+  done
+  return 1
+}
+
+ensure_app_window() {
+  local bundle_id="$1"
+  if (( $(window_count "$bundle_id") == 0 )); then
+    /usr/bin/open -g -b "$bundle_id" >/dev/null 2>&1 || true
+  fi
+}
+
+move_bundle() {
+  local bundle_id="$1"
+  local workspace="$2"
+  local window_id
+  windows_for "$bundle_id" | while IFS= read -r window_id; do
+    [[ -n "$window_id" ]] || continue
+    "$aerospace_bin" move-node-to-workspace --window-id "$window_id" "$workspace" >/dev/null 2>&1 || true
+  done
+}
+
+# Start each singleton app if macOS did not restore it.
+ensure_app_window com.google.Chrome
+ensure_app_window com.t3tools.t3code
+ensure_app_window com.tinyspeck.slackmacgap
+ensure_app_window app.zen-browser.zen
+
+# Ghostty intentionally does not restore its own state. Create enough fresh
+# instances to guarantee two terminal windows without duplicating existing ones.
+ghostty_missing=$((2 - $(window_count com.mitchellh.ghostty)))
+if (( ghostty_missing > 0 )); then
+  repeat $ghostty_missing; do
+    /usr/bin/open -g -n -a Ghostty >/dev/null 2>&1 || true
+  done
+fi
+
+# Wait for cold-started apps to publish their first windows.
+wait_for_count com.google.Chrome 1 || true
+if (( $(window_count com.google.Chrome) == 0 )); then
+  /usr/bin/osascript -e 'tell application id "com.google.Chrome" to make new window' >/dev/null 2>&1 || true
+  wait_for_count com.google.Chrome 1 || true
+fi
+wait_for_count com.t3tools.t3code 1 || true
+wait_for_count com.tinyspeck.slackmacgap 1 || true
+wait_for_count app.zen-browser.zen 1 || true
+wait_for_count com.mitchellh.ghostty 2 || true
+
+# Explicit placement makes this deterministic even when applications win the
+# login race before their on-window-detected callbacks run.
+move_bundle com.google.Chrome web
+move_bundle com.t3tools.t3code code
+move_bundle com.mitchellh.ghostty term
+move_bundle com.tinyspeck.slackmacgap chat
+move_bundle app.zen-browser.zen chat
+
+# Restore the two deliberate split layouts.
+"$aerospace_bin" flatten-workspace-tree --workspace term >/dev/null 2>&1 || true
+"$aerospace_bin" layout --workspace term --root tiles horizontal >/dev/null 2>&1 || true
+"$aerospace_bin" balance-sizes --workspace term >/dev/null 2>&1 || true
+
+"$aerospace_bin" flatten-workspace-tree --workspace chat >/dev/null 2>&1 || true
+"$aerospace_bin" layout --workspace chat --root tiles horizontal >/dev/null 2>&1 || true
+zen_window_id="$(windows_for app.zen-browser.zen | /usr/bin/tail -n 1)"
+if [[ -n "$zen_window_id" ]]; then
+  "$aerospace_bin" move --window-id "$zen_window_id" right >/dev/null 2>&1 || true
+fi
+"$aerospace_bin" balance-sizes --workspace chat >/dev/null 2>&1 || true
+
+# Leave Admin visible on the laptop and Code focused on the development screen.
+"$aerospace_bin" workspace chat >/dev/null 2>&1 || true
+"$aerospace_bin" workspace code >/dev/null 2>&1 || true
+
+print "$(date '+%Y-%m-%d %H:%M:%S') session restore complete"
+for bundle_id in com.google.Chrome com.t3tools.t3code com.mitchellh.ghostty com.tinyspeck.slackmacgap app.zen-browser.zen; do
+  print "$bundle_id=$(window_count "$bundle_id")"
+done

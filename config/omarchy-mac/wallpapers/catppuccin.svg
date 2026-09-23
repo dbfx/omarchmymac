@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="#0d0d16"/>
+      <stop offset="1" stop-color="#181827"/>
+    </linearGradient>
+    <radialGradient id="mauve">
+      <stop stop-color="#cba6f7" stop-opacity=".27"/>
+      <stop offset="1" stop-color="#cba6f7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="peach">
+      <stop stop-color="#fab387" stop-opacity=".15"/>
+      <stop offset="1" stop-color="#fab387" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="80" height="80" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="2" fill="#cdd6f4" opacity=".045"/>
+    </pattern>
+  </defs>
+  <rect width="3840" height="2160" fill="url(#bg)"/>
+  <ellipse cx="800" cy="300" rx="1250" ry="1050" fill="url(#mauve)"/>
+  <ellipse cx="3500" cy="1900" rx="1100" ry="900" fill="url(#peach)"/>
+  <rect width="3840" height="2160" fill="url(#dots)"/>
+  <path d="M2400 0h1440v1440L3120 720z" fill="#cba6f7" opacity=".025"/>
+  <path d="M0 1520l640-640 640 640-640 640z" fill="none" stroke="#fab387" stroke-width="2" opacity=".12"/>
+</svg>

@@ -1,0 +1,49 @@
+#!/bin/zsh
+set -eu
+
+theme_root="$HOME/.config/omarchy-mac"
+requested="${1:-}"
+
+case "$requested" in
+  tokyo-night|catppuccin|kanagawa|rose-pine) ;;
+  *)
+    print -u2 "usage: theme {tokyo-night|catppuccin|kanagawa|rose-pine}"
+    exit 2
+    ;;
+esac
+
+theme_file="$theme_root/themes/$requested.sh"
+source "$theme_file"
+ln -sfn "themes/$requested.sh" "$theme_root/current.sh"
+
+ghostty_theme="$HOME/.config/ghostty/theme"
+ghostty_theme_tmp="$ghostty_theme.tmp"
+printf '%s\n' \
+  "# Managed by ~/.config/omarchy-mac/bin/theme" \
+  "theme = $GHOSTTY_THEME" \
+  "background = $GHOSTTY_BACKGROUND" \
+  "foreground = $GHOSTTY_FOREGROUND" \
+  "cursor-color = $GHOSTTY_CURSOR" \
+  "selection-background = $GHOSTTY_SELECTION" \
+  "selection-foreground = $GHOSTTY_FOREGROUND" > "$ghostty_theme_tmp"
+mv "$ghostty_theme_tmp" "$ghostty_theme"
+
+printf '%s\n' "$requested" > "$theme_root/current-theme"
+
+if [[ -x /opt/homebrew/bin/borders ]]; then
+  /opt/homebrew/bin/borders style=round width=5.0 hidpi=on \
+    active_color="$BORDER_ACTIVE" inactive_color="$BORDER_INACTIVE" >/dev/null 2>&1 || true
+fi
+
+if [[ -x /opt/homebrew/bin/sketchybar ]]; then
+  /opt/homebrew/bin/sketchybar --reload >/dev/null 2>&1 || true
+fi
+
+if /usr/bin/pgrep -x ghostty >/dev/null 2>&1; then
+  /usr/bin/killall -USR2 ghostty >/dev/null 2>&1 || true
+fi
+
+# Wallpaper is intentionally independent. Theme changes should never replace a
+# desktop picture that the user chose separately.
+
+print "$THEME_NAME applied"

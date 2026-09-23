@@ -1,0 +1,54 @@
+#!/bin/zsh
+set -u
+
+state_root="$HOME/.config/omarchy-mac/state"
+project_file="$state_root/current-project"
+status_file="$state_root/build-status"
+log_file="$state_root/build.log"
+
+[[ -r "$project_file" ]] || { print -u2 "No active project. Use Caps+P first."; exit 64; }
+project="$(<$project_file)"
+[[ -d "$project" ]] || { print -u2 "Project no longer exists: $project"; exit 66; }
+
+project_name="${project:t}"
+mkdir -p "$state_root"
+printf 'RUN|%s|%s\n' "$project_name" "$(date +%s)" > "$status_file"
+/opt/homebrew/bin/sketchybar --trigger omarchy_activity_change >/dev/null 2>&1 || true
+
+cd "$project" || exit 66
+if [[ -x ./artisan || -f artisan ]]; then
+  command=(php artisan test)
+elif [[ -f pnpm-lock.yaml ]] && command -v pnpm >/dev/null; then
+  command=(pnpm test)
+elif [[ -f bun.lockb || -f bun.lock ]] && command -v bun >/dev/null; then
+  command=(bun test)
+elif [[ -f yarn.lock ]] && command -v yarn >/dev/null; then
+  command=(yarn test)
+elif [[ -f package.json ]]; then
+  command=(npm test)
+elif [[ -f Makefile ]] && /usr/bin/grep -Eq '^test:' Makefile; then
+  command=(make test)
+else
+  printf 'NONE|%s|%s\n' "$project_name" "$(date +%s)" > "$status_file"
+  print -u2 "No supported test command found in $project"
+  /opt/homebrew/bin/sketchybar --trigger omarchy_activity_change >/dev/null 2>&1 || true
+  exit 69
+fi
+
+{
+  printf '$'
+  printf ' %q' "${command[@]}"
+  printf '\n\n'
+  "${command[@]}"
+} > "$log_file" 2>&1
+result=$?
+
+if (( result == 0 )); then
+  outcome="PASS"
+else
+  outcome="FAIL"
+fi
+printf '%s|%s|%s\n' "$outcome" "$project_name" "$(date +%s)" > "$status_file"
+/opt/homebrew/bin/sketchybar --trigger omarchy_activity_change >/dev/null 2>&1 || true
+exit "$result"
+

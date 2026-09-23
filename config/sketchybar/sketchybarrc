@@ -1,0 +1,200 @@
+#!/bin/bash
+
+PLUGIN_DIR="$CONFIG_DIR/plugins"
+source "$CONFIG_DIR/colors.sh"
+
+# A compact bar on both displays. macOS menu-bar auto-hide is already enabled.
+bar=(
+  position=top
+  display=all
+  height=36
+  notch_display_height=36
+  color="$BAR_COLOR"
+  blur_radius=0
+  border_width=0
+  padding_left=8
+  padding_right=8
+  sticky=on
+  topmost=window
+  shadow=off
+  font_smoothing=on
+)
+sketchybar --bar "${bar[@]}"
+
+default=(
+  updates=when_shown
+  icon.font="SF Pro:Semibold:13.0"
+  icon.color="$MUTED_COLOR"
+  icon.padding_left=7
+  icon.padding_right=5
+  label.font="SF Pro:Semibold:13.0"
+  label.color="$TEXT_COLOR"
+  label.padding_left=5
+  label.padding_right=7
+  background.height=26
+  background.corner_radius=8
+  background.color="$TRANSPARENT"
+)
+sketchybar --default "${default[@]}"
+
+# AeroSpace workspace event and a small home/back-and-forth control.
+sketchybar --add event aerospace_workspace_change
+sketchybar --add event omarchy_activity_change
+sketchybar --add item mark left \
+           --set mark icon="◆" \
+                      icon.color="$ACCENT_COLOR" \
+                      icon.font="SF Pro:Bold:14.0" \
+                      label.drawing=off \
+                      padding_right=5 \
+                      click_script="/opt/homebrew/bin/aerospace workspace-back-and-forth"
+
+# One pill per workspace in workspaces.conf. The display numbers are only
+# placeholders; display_sync.sh pins each pill to its monitor by name.
+source "$HOME/.config/omarchy-mac/lib/workspaces.sh"
+for sid in $(workspace_names); do
+  label="$(printf '%s' "$sid" | tr '[:lower:]' '[:upper:]')"
+  group="$(workspace_display "$sid")"
+  case "$group" in bottom) display=2 ;; *) display=1 ;; esac
+  sketchybar --add item "workspace.$sid" left \
+             --set "workspace.$sid" \
+                   display=$display \
+                   icon.drawing=off \
+                   label="$label" \
+                   label.align=center \
+                   label.width=$(( ${#label} > 4 ? 16 + 7 * ${#label} : 44 )) \
+                   label.padding_left=3 \
+                   label.padding_right=3 \
+                   background.drawing=on \
+                   padding_left=2 \
+                   padding_right=2 \
+                   script="$PLUGIN_DIR/workspace.sh $sid $group" \
+                   click_script="/opt/homebrew/bin/aerospace workspace $sid" \
+             --subscribe "workspace.$sid" aerospace_workspace_change
+done
+
+# Reassign pills by display name whenever monitors connect or disconnect.
+sketchybar --add item display_sync left \
+           --set display_sync drawing=off \
+                              script="$PLUGIN_DIR/display_sync.sh" \
+           --subscribe display_sync display_change system_woke
+
+sketchybar --add item divider left \
+           --set divider icon="│" \
+                         icon.color="$SURFACE_ALT_COLOR" \
+                         icon.padding_left=8 \
+                         icon.padding_right=8 \
+                         label.drawing=off
+
+sketchybar --add item front_app left \
+           --set front_app icon="●" \
+                           icon.color="$ACCENT_COLOR" \
+                           label.max_chars=28 \
+                           label.font="SF Pro:Medium:13.0" \
+                           script="$PLUGIN_DIR/front_app.sh" \
+           --subscribe front_app front_app_switched
+
+# Project context sits in the center of the development display.
+sketchybar --add item project center \
+           --set project display=1 \
+                         icon="GIT" \
+                         background.drawing=on \
+                         background.color="$SURFACE_COLOR" \
+                         update_freq=15 \
+                         script="$PLUGIN_DIR/project.sh" \
+                         click_script="/opt/homebrew/bin/hs -c 'omarchyProjectChooser()'" \
+           --subscribe project omarchy_activity_change
+
+# Glanceable, event-driven status cluster.
+status_style=(
+  background.drawing=on
+  background.color="$SURFACE_COLOR"
+  padding_left=3
+  padding_right=3
+)
+
+# Reactive signals hide themselves when idle, keeping the bar calm.
+sketchybar --add item timer right \
+           --set timer "${status_style[@]}" icon="POM" update_freq=30 script="$PLUGIN_DIR/timer.sh" click_script="$HOME/.config/omarchy-mac/bin/pomodoro toggle" \
+           --subscribe timer omarchy_activity_change \
+           --add item media_state right \
+           --set media_state "${status_style[@]}" icon="NOW" script="$PLUGIN_DIR/media.sh" click_script="open -a Music" \
+           --subscribe media_state omarchy_activity_change \
+           --add item privacy right \
+           --set privacy "${status_style[@]}" script="$PLUGIN_DIR/privacy.sh" \
+           --subscribe privacy omarchy_activity_change \
+           --add item build right \
+           --set build "${status_style[@]}" icon="TST" update_freq=60 script="$PLUGIN_DIR/build.sh" click_script="open -na Ghostty.app --args --working-directory=$HOME/.config/omarchy-mac/state -e tail -n 120 -f $HOME/.config/omarchy-mac/state/build.log" \
+           --subscribe build omarchy_activity_change
+
+sketchybar --add item clock right \
+           --set clock "${status_style[@]}" \
+                       icon.drawing=off \
+                       update_freq=60 \
+                       script="$PLUGIN_DIR/clock.sh" \
+                       click_script="open -a Calendar" \
+           --add item focus right \
+           --set focus "${status_style[@]}" \
+                       icon="FCS" \
+                       label.drawing=off \
+                       update_freq=30 \
+                       script="$PLUGIN_DIR/focus.sh" \
+                       click_script="open 'x-apple.systempreferences:com.apple.Focus-Settings.extension'" \
+           --add item weather right \
+           --set weather "${status_style[@]}" \
+                         icon="WX" \
+                         update_freq=900 \
+                         script="$PLUGIN_DIR/weather.sh" \
+                         click_script="open -a Weather" \
+           --add item system right \
+           --set system "${status_style[@]}" \
+                        icon="SYS" \
+                        update_freq=30 \
+                        script="$PLUGIN_DIR/system.sh" \
+                        click_script="sketchybar --set system popup.drawing=toggle" \
+                        popup.background.color="$BAR_COLOR" \
+                        popup.background.corner_radius=10 \
+                        popup.background.border_width=1 \
+                        popup.background.border_color="$SURFACE_ALT_COLOR" \
+                        popup.blur_radius=0 \
+                        popup.y_offset=6 \
+           --add item system.cpu popup.system \
+           --set system.cpu icon="CPU" \
+                            label="--" \
+                            background.drawing=on \
+                            background.color="$SURFACE_COLOR" \
+                            click_script="open -na Ghostty.app --args -e btop" \
+           --add item system.mem popup.system \
+           --set system.mem icon="MEM" \
+                            label="--" \
+                            background.drawing=on \
+                            background.color="$SURFACE_COLOR" \
+                            click_script="open -na Ghostty.app --args -e btop" \
+           --add item battery right \
+           --set battery "${status_style[@]}" \
+                         icon="BAT" \
+                         update_freq=120 \
+                         script="$PLUGIN_DIR/battery.sh" \
+           --subscribe battery system_woke power_source_change \
+           --add item volume right \
+           --set volume "${status_style[@]}" \
+                        icon="VOL" \
+                        script="$PLUGIN_DIR/volume.sh" \
+                        click_script="osascript -e 'set volume output muted not (output muted of (get volume settings))'" \
+           --subscribe volume volume_change
+
+sketchybar --hotload on
+sketchybar --update
+
+# Assign pills by monitor name once at startup; the hardcoded display numbers
+# above are only placeholders until this runs.
+"$PLUGIN_DIR/display_sync.sh" &
+
+# One startup query initializes the visible pill on each display. Workspace
+# switches after this are event-only and make no AeroSpace CLI queries.
+workspace_state="$(/opt/homebrew/bin/aerospace list-workspaces --all --format '%{workspace}|%{workspace-is-focused}|%{workspace-is-visible}')"
+focused_workspace="$(printf '%s\n' "$workspace_state" | /usr/bin/awk -F'|' '$2 == "true" { print $1; exit }')"
+visible_workspaces="$(printf '%s\n' "$workspace_state" | /usr/bin/awk -F'|' '$3 == "true" { print $1 }' | /usr/bin/paste -sd, -)"
+sketchybar --trigger aerospace_workspace_change \
+  FOCUSED_WORKSPACE="$focused_workspace" \
+  PREV_WORKSPACE="" \
+  VISIBLE_WORKSPACES="$visible_workspaces"
