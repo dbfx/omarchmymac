@@ -25,9 +25,25 @@ git clone https://github.com/dbfx/omarchmymac.git ~/omarchmymac
 ~/omarchmymac/install.sh
 ```
 
-Then grant Accessibility to AeroSpace, Hammerspoon and Karabiner-Elements, add
-`~/.config/raycast/scripts` under Raycast > Extensions > Script Commands, and log
-out once. `bin/check.sh` reports anything still missing.
+### After the installer
+
+macOS will not let a tiling manager or a keyboard remapper run until you allow
+it, and nothing here works without that step:
+
+1. System Settings > Privacy & Security > Accessibility: turn on AeroSpace,
+   Hammerspoon and Karabiner-Elements. Each app prompts the first time it
+   launches; if you dismissed a prompt, add it here by hand.
+2. System Settings > Privacy & Security > Input Monitoring: Karabiner-Elements,
+   and approve its driver extension when asked (Caps Lock does nothing until
+   then).
+3. Raycast > Extensions > Script Commands: add `~/.config/raycast/scripts`.
+4. Log out and back in once so the space and menu bar settings apply.
+
+`bin/check.sh` reports anything still missing. To take it all off again, see
+[Uninstall](#uninstall).
+
+![The bar on the external display](docs/bar-external.png)
+![The bar on the laptop display](docs/bar-laptop.png)
 
 ## What it involves
 
@@ -172,6 +188,19 @@ fzf, and sets up starship, fzf, zoxide and the eza/bat aliases.
 | `bin/services.sh` | Start SketchyBar and borders via `brew services`, launch AeroSpace, Hammerspoon, Karabiner. |
 | `bin/set-wallpaper.sh` | Set the desktop picture on every display. |
 | `bin/check.sh` | Doctor: binaries, apps, font, links, services, defaults. Exit 1 if something is off. |
+| `bin/uninstall.sh` | Remove the links, restore the backups, stop services. `--reset-defaults` also resets macOS settings. |
+
+## Uninstall
+
+```sh
+~/omarchmymac/bin/uninstall.sh                   # restore files, stop the bar and borders
+~/omarchmymac/bin/uninstall.sh --reset-defaults  # also put the macOS defaults back to stock
+```
+
+It removes the symlinks, moves back whatever `bin/link.sh` backed up in
+`~/omarchmymac-backup/`, stops SketchyBar and borders and quits AeroSpace
+and Hammerspoon. Homebrew packages (`brew bundle cleanup --file Brewfile` if
+you want them gone), `~/.zshrc.private` and the repo itself are left alone.
 
 ## Credits and licence
 
