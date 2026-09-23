@@ -12,6 +12,15 @@ it installs Homebrew packages, symlinks dotfiles into your home directory
 (backing up what was there) and changes a few macOS defaults.
 
 ```sh
+curl -fsSL https://raw.githubusercontent.com/dbfx/omarchmymac/main/boot.sh | zsh
+```
+
+That installs the Xcode command line tools and Homebrew if they are missing,
+clones this repo to `~/omarchmymac` and runs `install.sh`, which asks which
+workspaces you want. Add `-s -- --defaults` after `zsh` to skip the questions,
+or clone and run `install.sh` yourself:
+
+```sh
 git clone https://github.com/dbfx/omarchmymac.git ~/omarchmymac
 ~/omarchmymac/install.sh
 ```
@@ -154,6 +163,7 @@ fzf, and sets up starship, fzf, zoxide and the eza/bat aliases.
 
 | Script | Purpose |
 |---|---|
+| `boot.sh` | The curl-able bootstrap: Xcode tools, Homebrew, clone, then `install.sh`. |
 | `install.sh` | Everything below, in order. Flags: `--skip-brew`, `--skip-defaults`, `--skip-wallpaper`. |
 | `bin/link.sh` | Symlink configs into place, backing up what was there. |
 | `bin/configure.sh` | Ask for workspaces and monitor names, write `workspaces.conf`, render. `--defaults` skips the questions. |
