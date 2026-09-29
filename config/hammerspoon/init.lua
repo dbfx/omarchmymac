@@ -345,9 +345,34 @@ screenWatcher = hs.screen.watcher.new(function()
   if sketchybarRestartTimer then sketchybarRestartTimer:stop() end
   sketchybarRestartTimer = hs.timer.doAfter(3, function()
     sketchybarRestartTimer = nil
+    print("sketchybar: restart after display change")
     task("/bin/zsh", { "-c", "launchctl kickstart -k gui/$UID/homebrew.mxcl.sketchybar" })
   end)
 end)
 screenWatcher:start()
+
+-- Waking the Mac or unlocking the screen can leave the bar window dimmed (the
+-- lock screen's backdrop effect never gets lifted from it). An in-process
+-- reload redraws it; do that a moment after each wake or unlock.
+local sketchybarReloadTimer = nil
+local wakeEvents = {
+  [hs.caffeinate.watcher.screensDidWake] = "screens woke",
+  [hs.caffeinate.watcher.screensDidUnlock] = "screen unlocked",
+  [hs.caffeinate.watcher.systemDidWake] = "system woke",
+  [hs.caffeinate.watcher.sessionDidBecomeActive] = "session active",
+  [hs.caffeinate.watcher.screensaverDidStop] = "screensaver stopped",
+}
+wakeWatcher = hs.caffeinate.watcher.new(function(event)
+  local reason = wakeEvents[event]
+  if not reason then return end
+  if sketchybarReloadTimer then sketchybarReloadTimer:stop() end
+  sketchybarReloadTimer = hs.timer.doAfter(2, function()
+    sketchybarReloadTimer = nil
+    if sketchybarRestartTimer then return end -- a restart is already queued
+    print("sketchybar: reload after " .. reason)
+    task("/opt/homebrew/bin/sketchybar", { "--reload" })
+  end)
+end)
+wakeWatcher:start()
 
 hs.alert.show("Caps leader loaded  ·  Caps+/ for help", 3)

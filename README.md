@@ -119,9 +119,13 @@ project with git status. Right: pomodoro, now playing, mic/camera in use, last
 test run, clock, focus mode, weather, CPU/memory, battery, volume. The
 reactive items hide themselves when idle.
 
-When a display connects or disconnects, Hammerspoon restarts SketchyBar a
-few seconds later. Without that, the bar on one screen keeps drawing the other
-screen's items, dimmed, and stops updating.
+Two things keep the bar healthy. When a display connects or disconnects,
+Hammerspoon restarts SketchyBar a few seconds later; without that, the bar on
+one screen keeps drawing the other screen's items and stops updating. And
+after the Mac wakes or the screen is unlocked, Hammerspoon reloads the bar,
+because the lock screen can leave the bar window dimmed. Both actions are
+logged in the Hammerspoon console. If the bar ever looks wrong anyway,
+Caps+S then B restarts it by hand.
 
 When the pointer touches the top edge and the real menu bar slides down,
 Hammerspoon hides SketchyBar until the pointer leaves the menu bar area, so
